@@ -2,13 +2,24 @@
 
 What went well with the first version of Semantic UI's React port? What didn't? And, most importantly, what are the fundamental ideas that captivated the community, and how can we make them even more prominent in future versions while reworking the library's weaknesses? We look to answer those questions by first distilling the philosophy behind Semantic UI, and building anew with that as our foundation.
 
+* [Painless First Run Experience](#painless-first-run-experience)
 * [Pragmatic Design Language](#pragmatic-design-language)
-* [Intuitiveness](#intuitiveness)
+* [Intuitive](#intuitive)
 * [Universal Traits](#universal-traits)
-* [The Bible](#the-bible)
+* [Shorthand Syntax](#shorthand-syntax)
+* [First-class Theming](#first-class-theming)
+
+## Painless First Run Experience
+
+There should be minimal steps needed for a user to get up and running. That means sane defaults, zero peer dependencies.
+
+```
+// Version 1
+
+```
 
 ## Pragmatic Design Language
-
+c
 One of the things that we love about Semantic UI is its friendly design language, where component APIs prioritize human readability. However, this emphasis is also a tax on [intuitiveness](#intuitiveness), and we want to re-evaluate that compromise. Take the `size` property, for example:
 
 ```js
@@ -29,6 +40,10 @@ Our goal is to continue to prioritize that human language, but more selectively,
 
 ## Intuitiveness
 
+Complementing our focus on pragmatism, we heavily emphasize intuitiveness and, when in doubt, always abide by the [Principle of Least Surprise](#todo). Components should do as much as possible to fit the .
+
+In such cases, we should always consider alternative API's before accepting inconsistent API's.
+
 ```js
 // Version 1
 <Table basic='very' />
@@ -47,9 +62,4 @@ It will be intuitive because...
 ```js
 ```
 
-## The Bible
-
-* The props for universal traits will never collide with other props
-* All component parts have a [shorthand prop](#todo-link-me) of the same name
-* All components parts are themeable
-* All components shall have a unique, human-readable identifying class
+## First-class Theming
