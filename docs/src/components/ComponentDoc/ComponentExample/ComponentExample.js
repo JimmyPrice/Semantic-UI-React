@@ -10,7 +10,13 @@ import { Divider, Form, Grid, Menu, Segment, Visibility } from 'semantic-ui-reac
 
 import { Provider } from 'stardust'
 
-import { exampleContext, variablesContext, repoURL, scrollToAnchor } from 'docs/src/utils'
+import {
+  exampleContext,
+  knobsContext,
+  variablesContext,
+  repoURL,
+  scrollToAnchor,
+} from 'docs/src/utils'
 import Editor from 'docs/src/components/Editor/Editor'
 import ComponentControls from '../ComponentControls'
 import ComponentExampleTitle from './ComponentExampleTitle'
@@ -30,12 +36,6 @@ const babelConfig = {
   ],
 }
 
-const headerColumnStyle = {
-  // provide room for absolutely positions toggle code icons
-  minHeight: '4em',
-  paddingRight: '7em',
-}
-
 const childrenStyle = {
   paddingTop: 0,
   maxWidth: '50rem',
@@ -53,7 +53,7 @@ const errorStyle = {
  * Allows toggling the the raw `code` code block.
  */
 class ComponentExample extends PureComponent {
-  state = {}
+  state = { knobs: {} }
 
   static contextTypes = {
     onPassed: PropTypes.func,
@@ -89,6 +89,25 @@ class ComponentExample extends PureComponent {
     })
   }
 
+  componentWillReceiveProps(nextProps) {
+    // deactivate examples when switching from one to the next
+    if (
+      this.isActiveHash() &&
+      this.isActiveState() &&
+      this.props.location.hash !== nextProps.location.hash
+    ) {
+      this.clearActiveState()
+    }
+  }
+
+  clearActiveState = () => {
+    this.setState({
+      showCode: false,
+      showHTML: false,
+      showVariables: false,
+    })
+  }
+
   isActiveState = () => {
     const { showCode, showHTML, showVariables } = this.state
 
@@ -114,11 +133,7 @@ class ComponentExample extends PureComponent {
 
     history.replace(location.pathname)
 
-    this.setState({
-      showCode: false,
-      showHTML: false,
-      showVariables: false,
-    })
+    this.clearActiveState()
   }
 
   handleDirectLinkClick = () => {
@@ -305,11 +320,59 @@ class ComponentExample extends PureComponent {
     }
   }, 100)
 
-  renderWithProvider = ExampleComponent => (
-    <Provider componentVariables={this.state.componentVariables}>
-      <ExampleComponent />
-    </Provider>
-  )
+  handleKnobChange = (knobs) => {
+    this.setState(
+      prevState => ({
+        knobs: {
+          ...prevState.knobs,
+          ...knobs,
+        },
+      }),
+      this.renderSourceCode,
+    )
+  }
+
+  getComponentName = () => this.props.examplePath.split('/')[1]
+
+  renderWithProvider = (ExampleComponent) => {
+    console.log('renderWithProvider()')
+    const { examplePath } = this.props
+    const knobsFilename = `./${examplePath}.knobs.js`
+    const hasKnobsFile = _.includes(knobsContext.keys(), knobsFilename)
+
+    console.log({
+      hasKnobsFile,
+      knobsFilename,
+    })
+
+    if (!hasKnobsFile) {
+      return (
+        <Provider componentVariables={this.state.componentVariables}>
+          <ExampleComponent />
+        </Provider>
+      )
+    }
+
+    const { knobs } = this.state
+    const Knobs = knobsContext(knobsFilename).default
+
+    console.log({
+      knobs,
+      Knobs,
+    })
+
+    const mergedKnobs = { ...Knobs.defaultProps, ...knobs }
+
+    return (
+      <Provider componentVariables={this.state.componentVariables}>
+        <div>
+          <Knobs knobs={mergedKnobs} onKnobChange={this.handleKnobChange} />
+          <pre>{JSON.stringify(knobs, null, 2)}</pre>
+          <ExampleComponent knobs={mergedKnobs} />
+        </div>
+      </Provider>
+    )
+  }
 
   handleChangeCode = (sourceCode) => {
     this.setState({ sourceCode }, this.renderSourceCode)
@@ -453,11 +516,10 @@ class ComponentExample extends PureComponent {
   }
 
   renderVariables = () => {
-    const { examplePath } = this.props
     const { showVariables } = this.state
     if (!showVariables) return
 
-    const name = examplePath.split('/')[1]
+    const name = this.getComponentName()
 
     return (
       <div>
@@ -512,7 +574,7 @@ class ComponentExample extends PureComponent {
   }
 
   render() {
-    const { children, description, suiVersion, title } = this.props
+    const { children, description, location, suiVersion, title } = this.props
     const {
       handleMouseLeave,
       handleMouseMove,
@@ -525,9 +587,14 @@ class ComponentExample extends PureComponent {
 
     const isActive = this.isActiveHash() || this.isActiveState()
 
+    const isInFocus = !location.hash || (location.hash && (this.isActiveHash() || isHovering))
+
     const exampleStyle = {
       position: 'relative',
-      transition: 'box-shadow 200ms, background 200ms',
+      transition: 'box-shadow 200ms, background 200ms, opacity 200ms, filter 200ms',
+      // TODO: opacity / filter a good idea to help with user focus?  Doesn't respect scrollspy right now...
+      opacity: isInFocus ? 1 : 0.4,
+      filter: isInFocus ? 'grayscale(0)' : 'grayscale(1)',
       ...(isActive
         ? {
           background: '#fff',
@@ -551,7 +618,7 @@ class ComponentExample extends PureComponent {
           style={exampleStyle}
         >
           <Grid.Row>
-            <Grid.Column style={headerColumnStyle} width={12}>
+            <Grid.Column width={12}>
               <ComponentExampleTitle
                 description={description}
                 title={title}
@@ -573,9 +640,11 @@ class ComponentExample extends PureComponent {
             </Grid.Column>
           </Grid.Row>
 
-          <Grid.Row columns={1}>
-            {children && <Grid.Column style={childrenStyle}>{children}</Grid.Column>}
-          </Grid.Row>
+          {children && (
+            <Grid.Row columns={1}>
+              <Grid.Column style={childrenStyle}>{children}</Grid.Column>
+            </Grid.Row>
+          )}
 
           <Grid.Row columns={1}>
             <Grid.Column className={`rendered-example ${this.getKebabExamplePath()}`}>

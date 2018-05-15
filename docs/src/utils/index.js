@@ -18,9 +18,14 @@ export const exampleContext = require.context(
 )
 
 /**
- * Get the Webpack Context for all doc site examples.
+ * Get the Webpack Context for all src component variables.
  */
 export const variablesContext = require.context('src/components/', true, /\w+Variables\.js$/)
+
+/**
+ * Get the Webpack Context for all component knob files.
+ */
+export const knobsContext = require.context('docs/src/examples/', true, /\w+\.knobs\.js$/)
 
 export const parentComponents = _.flow(_.filter(META.isParent), _.sortBy('_meta.name'))(
   semanticUIReact,
